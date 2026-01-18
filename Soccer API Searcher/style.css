@@ -1,0 +1,144 @@
+/* Reset and base */
+* {
+	margin: 0;
+    padding: 0;
+	box-sizing: border-box;
+	font-family: 'Arial', sans-serif;
+}
+
+body {
+	background-color: #f0f4f8;
+	color: #333;
+}
+
+header {
+	background-color: #1f4287;
+	color: #fff;
+	padding: 25px 0;
+	text-align: center;
+	box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+main {
+	max-width: 1000px;
+	margin: 20px auto;
+	padding: 20px;
+}
+
+.search-section {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 30px;
+}
+
+.search-section input {
+	width: 60%;
+	padding: 12px;
+	font-size: 16px;
+	border-radius: 8px;
+	border: 1px solid #ccc;
+}
+
+.search-section button {
+	padding: 12px 20px;
+	margin-left: 10px;
+	font-size: 16px;
+	background-color: #1f4287;
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: 0.2s;
+}
+
+.search-section button:hover {
+	background-color: #0d1b3c;
+}
+
+.results-section {
+	margin-bottom: 40px;
+}
+
+.results-section h2 {
+	margin-bottom: 15px;
+	color: #1f4287;
+	border-bottom: 2px solid #1f4287;
+	padding-bottom: 5px;
+}
+
+ul {
+	list-style: none;
+	padding: 0;
+}
+
+li {
+	display: flex;
+	align-items: center;
+	background-color: #fff;
+	margin-bottom: 12px;
+	padding: 12px;
+	border-radius: 10px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+li img {
+	width: 50px;
+	height: 50px;
+	border-radius: 8px;
+	object-fit: cover;
+	margin-right: 15px;
+}
+
+/* Event text info */
+.event-info {
+	display: flex;
+	flex-direction: column;
+}
+
+.event-name {
+	font-size: 16px;
+	color: #1f4287;
+	margin-bottom: 5px;
+}
+
+.event-date, .event-score {
+	font-size: 14px;
+	color: #555;
+	margin-bottom: 3px;
+}
+
+/* Player grid */
+.player-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 15px;
+}
+
+.player-grid li {
+	flex-direction: column;
+	text-align: center;
+	padding: 10px;
+}
+
+.player-grid li img {
+	width: 100px;
+	height: 100px;
+	margin: 0 0 10px 0;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+footer {
+	text-align: center;
+	padding: 20px 0;
+	background-color: #1f4287;
+	color: #fff;
+	margin-top: 40px;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+}
+
+a {
+	color: #fff;
+	text-decoration: underline;
+}
