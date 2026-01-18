@@ -1,0 +1,1 @@
+Developed a Python backtesting engine for intraday strategies using time-series resampling, swing-structure logic, and R-based performance metrics, extended with a parameter optimizer to identify statistically optimal session end times.
