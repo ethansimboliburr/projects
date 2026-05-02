@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Welcome</title>
+
+		<!-- Use same stylesheet for consistency -->
+		<link rel="stylesheet" href="style.css">
+
+		<style>
+			/* Gradient background + glassmorphism center card */
+
+			/* Smooth blue gradient background */
+			body {
+				background: linear-gradient(135deg, #1f4287, #0d1b3c, #3b82f6);
+				background-size: 200% 200%;
+				animation: gradientShift 12s ease infinite;
+				color: #fff;
+			}
+
+			/* Animated gradient movement */
+			@keyframes gradientShift {
+				0% { background-position: 0% 50%; }
+				50% { background-position: 100% 50%; }
+				100% { background-position: 0% 50%; }
+			}
+
+			/* Center container */
+			.cover-container {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+				padding: 20px;
+			}
+
+			/* Glass card effect */
+			.cover-box {
+				background: rgba(255, 255, 255, 0.15);
+				backdrop-filter: blur(18px);
+				-webkit-backdrop-filter: blur(18px);
+				padding: 50px 70px;
+				border-radius: 25px;
+				box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+				text-align: center;
+				max-width: 650px;
+				border: 1px solid rgba(255, 255, 255, 0.25);
+			}
+
+			/* Styling for h1 html */
+			.cover-title {
+				font-size: 56px;
+				font-weight: bold;
+				letter-spacing: 1px;
+				margin-bottom: 15px;
+				color: #fff;
+				text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+			}
+			/* Styling for paragraph html */
+			.cover-subtitle {
+				font-size: 20px;
+				color: #e6e6e6;
+				margin-bottom: 40px;
+				line-height: 1.6;
+				max-width: 500px;
+				margin-left: auto;
+				margin-right: auto;
+			}
+
+			/* Button style */
+			.cover-btn {
+				padding: 16px 36px;
+				font-size: 20px;
+				background-color: #ffffff;
+				color: #1f4287;
+				border: none;
+				border-radius: 12px;
+				cursor: pointer;
+				font-weight: bold;
+				transition: 0.25s ease;
+				box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+			}
+			/* Makes the button grow slightly and brighten when hovered */
+			.cover-btn:hover {
+				transform: scale(1.06);
+				background-color: #f0f4f8;
+			}
+			/* Shrinks slightly when clicked (press effect) */
+			.cover-btn:active {
+				transform: scale(0.97);
+			}
+		</style>
+	</head>
+
+	<body>
+		<!-- Animated gradient background + glass card + CTA button + About Page button -->
+		<div class="cover-container">
+			<div class="cover-box">
+				<h1 class="cover-title">Football Team Info</h1>
+				<p class="cover-subtitle">
+					Search teams, explore upcoming and past games, and view full rosters, 
+					all powered by TheSportsDB API.
+				</p>
+				<!-- Enter Site Button -->
+				<a href="index.html">
+					<button class="cover-btn">Enter Site</button>
+				</a>
+				<!-- Spacing between buttons -->
+				<br>
+				<br>
+				<!-- Enter About Page Button -->
+				<a href="about.html">
+					<button class="cover-btn">About</button>
+				</a>
+			</div>
+		</div>
+
+	</body>
+</html>

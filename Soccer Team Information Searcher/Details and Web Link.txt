@@ -1,0 +1,1 @@
+Football Team Info is a responsive web app that allows users to search professional football teams and view upcoming matches, past results, and full player rosters using real-time data from TheSportsDB API. Website Link: https://www.cs.drexel.edu/~esb89/info-151-group-project/index.html
