@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #fff;
+}
+
+/* ── Nav Bar ── */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar .logo {
+    font-size: 1.3em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #a8d8ea;
+}
+
+.navbar nav a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    margin-left: 24px;
+    font-size: 0.95em;
+    transition: color 0.2s;
+}
+
+.navbar nav a:hover {
+    color: #fff;
+}
+
+/* ── Hero ── */
+.hero {
+    text-align: center;
+    padding: 48px 20px 24px;
+}
+
+.hero h1 {
+    font-size: 2.4em;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: 1px;
+}
+
+.hero p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1em;
+    margin: 0;
+}
+
+/* ── Card Container ── */
+.card-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 32px 32px 60px;
+}
+
+/* ── Weather Card ── */
+.card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 36px 40px;
+    min-width: 220px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #a8d8ea;
+}
+
+.card .value {
+    font-size: 2.4em;
+    font-weight: 700;
+    margin: 10px 0;
+    color: #fff;
+}
+
+.card .label {
+    font-size: 0.88em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+}
+
+/* ── City Dropdown ── */
+.city-select {
+    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 0.95em;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.city-select:hover,
+.city-select:focus {
+    border-color: #a8d8ea;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.city-select option {
+    background: #16213e;
+    color: #fff;
+}
+
+/* ── Status / Loading ── */
+.status-msg {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.05em;
+    margin-top: 60px;
+}

@@ -1,0 +1,43 @@
+<!-- Author: Karthik Nair -->
+<!-- Last Updated: 2026-05-01 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/stocks.css">
+    <title>Stocks</title>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <span class="logo">&#128200; Stocks</span>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="weather.html">Weather</a>
+            <a href="news.html">News</a>
+            <a href="sports.html">Sports</a>
+        </nav>
+    </div>
+
+    <div class="hero">
+        <h1>Stock Dashboard</h1>
+        <p>Live quotes for your selected symbols</p>
+    </div>
+
+    <div class="ai-summary-section">
+        <div class="ai-summary-label">AI Market Summary</div>
+        <div id="ai-summary" class="ai-summary-text loading">Analyzing market data...</div>
+    </div>
+
+    <div class="card-container" id="stock-container">
+        <div class="status-msg">Loading stocks...</div>
+    </div>
+
+    <script src="stockapi.js"></script>
+
+</body>
+
+</html>

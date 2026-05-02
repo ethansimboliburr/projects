@@ -1,0 +1,49 @@
+.navlinks {
+	margin-bottom: 50px;
+}
+/* 4/10 Ethan Burr */
+.textheader a {
+	color: white;
+	text-decoration: none;
+	font-weight: bold;
+	margin: 0 10px;
+	transition: color 0.2s ease;
+}
+
+.textheader a:hover {
+	color: #00d4ff;
+}
+.textheader a {
+	color: #333;
+	text-decoration: none;
+	font-weight: bold;
+}
+.textheader {
+	text-align: center;
+	margin-top: 0px;
+}
+/* 4/10 Ethan Burr */
+.card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 25px;
+    margin: 20px auto;
+    max-width: 800px;
+    color: white;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.card h2 {
+    margin-bottom: 15px;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

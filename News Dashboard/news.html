@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/news.css">
+    <title>News</title>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <span class="logo">&#128240; News</span>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="weather.html">Weather</a>
+            <a href="stocks.html">Stocks</a>
+            <a href="sports.html">Sports</a>
+        </nav>
+    </div>
+
+    <div class="hero">
+        <h1>Top Stories</h1>
+        <p>Live headlines from trusted sources around the world</p>
+    </div>
+
+    <div class="ai-summary-section">
+        <div class="ai-summary-label">AI News Summary</div>
+        <div id="ai-summary" class="ai-summary-text loading">Analyzing today's headlines...</div>
+    </div>
+
+    <div class="container">
+        <div class="filter-row">
+            <button class="filter-btn" onclick="toggleFilter('general', this)">General</button>
+            <button class="filter-btn" onclick="toggleFilter('business', this)">Business</button>
+            <button class="filter-btn" onclick="toggleFilter('technology', this)">Technology</button>
+            <button class="filter-btn" onclick="toggleFilter('entertainment', this)">Entertainment</button>
+            <button class="filter-btn" onclick="toggleFilter('sports', this)">Sports</button>
+            <button class="filter-btn" onclick="toggleFilter('science', this)">Science</button>
+            <button class="filter-btn" onclick="toggleFilter('health', this)">Health</button>
+        </div>
+        <div id="news-container" class="news-grid">
+            <div class="loading">Loading news...</div>
+        </div>
+    </div>
+
+    <script>
+        const GEMINI_API_KEY = 'AIzaSyCFpNJA5pn72_yz1iiV1DCAhJELufr35bM';
+        const SUMMARY_CACHE_KEY = 'news_summary_cache';
+        const CACHE_TTL = 12 * 60 * 60 * 1000;
+
+        let activeFilters = [];
+        let allArticles = [];
+
+        function toggleFilter(category, btn) {
+            btn.classList.toggle('active');
+            if (activeFilters.includes(category)) {
+                activeFilters = activeFilters.filter(c => c !== category);
+            } else {
+                activeFilters.push(category);
+            }
+            document.querySelectorAll('#news-container .card').forEach(card => {
+                const show = activeFilters.length === 0 || activeFilters.includes(card.dataset.category);
+                card.style.display = show ? 'flex' : 'none';
+            });
+            generateAISummary(allArticles, true);
+        }
+
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            const apiKey = '389c1aea7b30cab356501e086ee035c2';
+            const url = `https://api.mediastack.com/v1/news?access_key=${apiKey}&languages=en&countries=us&limit=12&categories=general,business,technology,entertainment,sports,science,health`;
+
+            const CACHE_KEY = 'news_cache';
+
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < CACHE_TTL) {
+                    renderArticles(data, false);
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.data) {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: data.data, timestamp: Date.now() }));
+                    renderArticles(data.data, true);
+                } else {
+                    container.innerHTML = '<div class="loading">No news found at the moment.</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                container.innerHTML = cached
+                    ? (renderArticles(JSON.parse(cached).data, false), '')
+                    : '<div class="loading">Failed to load news.</div>';
+            }
+        }
+
+        function renderArticles(articles, forceRefresh) {
+            allArticles = articles;
+            const container = document.getElementById('news-container');
+            if (!articles || articles.length === 0) {
+                container.innerHTML = '<div class="loading">No news found.</div>';
+                return;
+            }
+            container.innerHTML = '';
+            articles.forEach(article => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.category = article.category || 'general';
+                const date = new Date(article.published_at).toLocaleDateString();
+                const img = article.image || 'https://via.placeholder.com/300x180?text=No+Image+Available';
+                card.innerHTML = `
+                    <img src="${img}" alt="${article.title}">
+                    <div class="card-content">
+                        <h2 class="card-title">${article.title}</h2>
+                        <p class="card-description">${article.description ? article.description.substring(0, 150) + '...' : 'No description available.'}</p>
+                        <div class="card-footer">
+                            <span>${article.source || 'Unknown Source'}</span>
+                            <span>${date}</span>
+                        </div>
+                        <a href="${article.url}" target="_blank">Read More →</a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            generateAISummary(articles, forceRefresh);
+        }
+
+        // ── AI Summary ────────────────────────────────────────────────────────
+
+        function setSummary(text, state = '') {
+            const el = document.getElementById('ai-summary');
+            if (!el) return;
+            el.textContent = text;
+            el.className = 'ai-summary-text' + (state ? ` ${state}` : '');
+        }
+
+        function filterKey() {
+            return activeFilters.slice().sort().join(',') || 'all';
+        }
+
+        function readSummaryCache() {
+            try {
+                const raw = localStorage.getItem(SUMMARY_CACHE_KEY);
+                if (!raw) return null;
+                const { timestamp, text, filters } = JSON.parse(raw);
+                if (!timestamp || !text) return null;
+                if (Date.now() - timestamp > CACHE_TTL) {
+                    localStorage.removeItem(SUMMARY_CACHE_KEY);
+                    return null;
+                }
+                if ((filters || 'all') !== filterKey()) return null;
+                return text;
+            } catch {
+                return null;
+            }
+        }
+
+        function writeSummaryCache(text) {
+            try {
+                localStorage.setItem(SUMMARY_CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    text,
+                    filters: filterKey()
+                }));
+            } catch (e) {
+                console.error('Error writing summary cache:', e);
+            }
+        }
+
+        function buildFallbackSummary(articles) {
+            const visible = articles.filter(a =>
+                activeFilters.length === 0 || activeFilters.includes(a.category || 'general')
+            );
+            if (visible.length === 0) return 'No articles match the selected filters.';
+
+            const categories = [...new Set(visible.map(a => a.category || 'general'))];
+            const scope = activeFilters.length > 0
+                ? activeFilters.join(', ')
+                : 'general, business, technology, and more';
+            return `Today's headlines cover ${scope} topics with ${visible.length} stories from sources including ${visible.slice(0, 3).map(a => a.source || 'various outlets').join(', ')}. Top story: "${visible[0].title}".`;
+        }
+
+        async function generateAISummary(articles, forceRefresh = false) {
+            if (!forceRefresh) {
+                const cached = readSummaryCache();
+                if (cached) {
+                    setSummary(cached);
+                    return;
+                }
+            }
+
+            const visible = articles.filter(a =>
+                activeFilters.length === 0 || activeFilters.includes(a.category || 'general')
+            );
+            if (visible.length === 0) {
+                setSummary('No articles match the selected filters.');
+                return;
+            }
+
+            setSummary('Analyzing headlines...', 'loading');
+
+            const scope = activeFilters.length > 0
+                ? activeFilters.join(', ')
+                : 'general news';
+            const headlines = visible.slice(0, 8).map(a =>
+                `- [${a.category || 'general'}] ${a.title}${a.description ? ': ' + a.description.substring(0, 100) : ''}`
+            ).join('\n');
+
+            const prompt = `You are a news analyst. Based on the following headlines from the ${scope} category, write a 2-4 sentence summary of the major themes and stories. Be concise and insightful. Do not use bullet points or headers.\n\n${headlines}`;
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    }
+                );
+
+                if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+
+                const data = await response.json();
+                const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                if (!summary) throw new Error('Empty Gemini response');
+
+                writeSummaryCache(summary);
+                setSummary(summary);
+            } catch (error) {
+                console.error('AI summary error — using fallback:', error);
+                const fallback = buildFallbackSummary(articles);
+                writeSummaryCache(fallback);
+                setSummary(fallback);
+            }
+        }
+
+        window.onload = fetchNews;
+    </script>
+
+</body>
+</html>

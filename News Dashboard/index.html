@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time News Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .navbar .logo {
+      font-size: 1.2em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #a8d8ea;
+    }
+
+    .navbar nav a {
+      color: rgba(255, 255, 255, 0.75);
+      text-decoration: none;
+      margin-left: 24px;
+      font-size: 0.95em;
+      transition: color 0.2s;
+    }
+
+    .navbar nav a:hover { color: #fff; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 64px 20px 40px;
+    }
+
+    .hero h1 {
+      font-size: 2.8em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 1.05em;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Quick-links grid ── */
+    .links-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 40px 32px 0;
+    }
+
+    .link-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 28px 36px;
+      min-width: 160px;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .link-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .link-card .icon { font-size: 2.2em; margin-bottom: 10px; }
+    .link-card .label { font-size: 1em; font-weight: 600; color: #a8d8ea; }
+
+    /* ── Info sections ── */
+    .content {
+      max-width: 860px;
+      margin: 48px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 32px 36px;
+    }
+
+    .info-card h2 {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #a8d8ea;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info-card p, .info-card li {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.7;
+      font-size: 0.97em;
+    }
+
+    .info-card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-card ul li {
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .info-card ul li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: #a8d8ea;
+      font-weight: bold;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.85em;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="navbar">
+    <span class="logo">&#128240; News Dashboard</span>
+    <nav>
+      <a href="news.html">News</a>
+      <a href="stocks.html">Stocks</a>
+      <a href="weather.html">Weather</a>
+      <a href="sports.html">Sports</a>
+    </nav>
+  </div>
+
+  <div class="hero">
+    <h1>Real-Time News Dashboard</h1>
+    <p>Your one-stop website for live data and news updates from various sources</p>
+  </div>
+
+  <div class="links-grid">
+    <a href="news.html" class="link-card">
+      <div class="icon">📰</div>
+      <div class="label">News</div>
+    </a>
+    <a href="stocks.html" class="link-card">
+      <div class="icon">📈</div>
+      <div class="label">Stocks</div>
+    </a>
+    <a href="weather.html" class="link-card">
+      <div class="icon">⛅</div>
+      <div class="label">Weather</div>
+    </a>
+    <a href="sports.html" class="link-card">
+      <div class="icon">🏆</div>
+      <div class="label">Sports</div>
+    </a>
+  </div>
+
+  <div class="content">
+    <div class="info-card">
+      <h2>About Our Website</h2>
+      <p>
+        Hundreds of millions of uninformed individuals every day don't know where to get their day-to-day news.
+        They spend hours searching different websites and sources, not knowing what's real and what's not.
+        Our product retrieves data in real time from various APIs such as weather, crypto, stock markets, and more.
+      </p>
+      <br>
+      <p>
+        The user can filter these data sets to individualize their experience based on the information they are
+        particularly interested in. We focus on a modern, clean, and straightforward interface to make your
+        news consumption effortless.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <h2>How It Works</h2>
+      <ul>
+        <li>Data is pulled in real-time from multiple trusted sources via APIs</li>
+        <li>Users can select which categories they are interested in (e.g., crypto, weather, stocks)</li>
+        <li>The dashboard displays only the most relevant information in a clean, uncluttered layout</li>
+        <li>Filters and settings allow you to personalize your news feed easily</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h2>User Guide</h2>
+      <p style="color: rgba(255,255,255,0.5); font-size: 0.88em; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.5px;">Navigation &amp; Features</p>
+
+      <ul>
+        <li>
+          <strong style="color: #a8d8ea;">News</strong> &mdash;
+          Browse live headlines across seven categories: General, Business, Technology, Entertainment, Sports, Science, and Health.
+          Click any category button at the top to toggle that feed on or off. Multiple categories can be active at the same time.
+        </li>
+        <li>
+          <strong style="color: #a8d8ea;">Stocks</strong> &mdash;
+          View real-time quotes for a curated set of tracked symbols. Each card shows the current price and daily change.
+          Use the dropdown to look up any additional ticker not shown by default.
+        </li>
+        <li>
+          <strong style="color: #a8d8ea;">Weather</strong> &mdash;
+          Select a city from the dropdown menu to instantly load live conditions including temperature, humidity, wind speed, and a general forecast description.
+          Switch cities at any time to compare conditions.
+        </li>
+        <li>
+          <strong style="color: #a8d8ea;">Sports</strong> &mdash;
+          Get the latest news for your favourite leagues. Click the league buttons &mdash; NBA, NFL, MLB, NHL, MLS, or Premier League &mdash; to expand or collapse that league's news feed.
+          Multiple leagues can be open simultaneously.
+        </li>
+        <li>
+          <strong style="color: #a8d8ea;">Navigating between pages</strong> &mdash;
+          Use the navigation bar at the top of any page, or click the shortcut cards on this home page, to jump between sections instantly.
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2026 Real-Time News Dashboard. All rights reserved.
+  </footer>
+
+</body>
+</html>
