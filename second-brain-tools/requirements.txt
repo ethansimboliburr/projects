@@ -1,0 +1,13 @@
+anthropic
+click
+python-dotenv
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+watchdog
+requests
+beautifulsoup4
+pyyaml
+rich
+flask
+pillow
