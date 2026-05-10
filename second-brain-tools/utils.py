@@ -1,6 +1,6 @@
 """Shared helpers used across all tools."""
-import re
 import os
+import re
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
@@ -15,13 +15,11 @@ def today() -> str:
 
 
 def slug(text: str) -> str:
-    """Convert text to a safe filename slug."""
     text = re.sub(r"[^\w\s-]", "", text)
     return re.sub(r"[\s]+", "-", text).strip("-")
 
 
 def safe_write(path: Path, content: str) -> Path:
-    """Write content to path; versions filename if it already exists."""
     if path.exists():
         stem = path.stem
         suffix = path.suffix
@@ -36,7 +34,6 @@ def safe_write(path: Path, content: str) -> Path:
 
 
 def append_to(path: Path, content: str) -> None:
-    """Append content to an existing note."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write("\n" + content)
@@ -69,7 +66,6 @@ def search_vault(query: str) -> list[tuple[Path, str]]:
         except Exception:
             continue
         if query.lower() in text.lower():
-            # find first matching line for context
             for line in text.splitlines():
                 if query.lower() in line.lower():
                     results.append((md, line.strip()))
@@ -107,3 +103,14 @@ def update_frontmatter_field(path: Path, key: str, value: str) -> None:
         block = block.rstrip() + f"\n{key}: {value}\n"
     new_text = "---" + block + "---" + text[end + 3:]
     path.write_text(new_text, encoding="utf-8")
+
+
+def ai_available() -> bool:
+    """Returns True only if ANTHROPIC_API_KEY is set."""
+    return bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
+
+
+AI_UNAVAILABLE_MSG = (
+    "[AI features disabled] Add ANTHROPIC_API_KEY to your .env file to enable "
+    "generated content. Note was created with empty sections."
+)

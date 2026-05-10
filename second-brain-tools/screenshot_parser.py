@@ -4,12 +4,14 @@ import os
 from pathlib import Path
 
 from config import vault_path
-from utils import today, safe_write, log_brain
+from utils import today, safe_write, log_brain, ai_available
 
 VAULT = vault_path()
 
 
-def _claude_vision(image_path: Path, prompt: str) -> str:
+def _claude_vision(image_path: Path, prompt: str) -> str | None:
+    if not ai_available():
+        return None
     import anthropic
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     data = base64.standard_b64encode(image_path.read_bytes()).decode()
@@ -31,6 +33,20 @@ def _claude_vision(image_path: Path, prompt: str) -> str:
     return msg.content[0].text
 
 
+def _detect_type_from_filename(image_path: Path) -> str:
+    """Heuristic routing from filename when AI is unavailable."""
+    name = image_path.stem.lower()
+    if any(w in name for w in ["trade", "chart", "pnl", "nq", "es", "spy"]):
+        return "trade"
+    if any(w in name for w in ["job", "posting", "role", "coop"]):
+        return "application"
+    if any(w in name for w in ["syllabus", "course", "schedule"]):
+        return "syllabus"
+    if any(w in name for w in ["card", "contact", "person"]):
+        return "contact"
+    return "misc"
+
+
 def _detect_type(raw: str) -> str:
     rl = raw.lower()
     if any(w in rl for w in ["ticker", "entry", "exit", "pnl", "trade", "bought", "sold", "profit", "loss"]):
@@ -39,19 +55,27 @@ def _detect_type(raw: str) -> str:
         return "application"
     if any(w in rl for w in ["syllabus", "course", "week", "assignment", "due date", "lecture"]):
         return "syllabus"
-    if any(w in rl for w in ["name", "email", "phone", "linkedin", "title", "company"]):
+    if any(w in rl for w in ["name", "email", "phone", "linkedin", "title"]):
         return "contact"
     return "misc"
 
 
 def process_image(image_path: Path) -> None:
+    if not ai_available():
+        # Fall back to filename-based routing, create a stub note
+        content_type = _detect_type_from_filename(image_path)
+        log_brain(f"[RUFLO] Screenshot (no AI key) filename-routed: {image_path.name} -> {content_type}")
+        _route_no_ai(image_path, content_type)
+        _archive(image_path)
+        return
+
     prompt = (
         "Analyze this screenshot. Identify what type of content it is "
         "(trade/brokerage data, job posting, business card/contact, syllabus, or other). "
         "Then extract all relevant information in a structured way."
     )
     try:
-        raw = _claude_vision(image_path, prompt)
+        raw = _claude_vision(image_path, prompt) or ""
     except Exception as e:
         log_brain(f"[ERROR] Vision API failed for {image_path.name}: {e}")
         return
@@ -73,6 +97,23 @@ def process_image(image_path: Path) -> None:
     _archive(image_path)
 
 
+def _route_no_ai(image_path: Path, content_type: str) -> None:
+    """Create a stub note when no AI key is available."""
+    content = (
+        f"---\ntitle: \"{image_path.stem}\"\ndate: {today()}\ntype: {content_type}\ntags: [inbox]\n---\n\n"
+        f"## Screenshot\nFile: {image_path.name}\n\n"
+        f"[Add ANTHROPIC_API_KEY to .env to enable automatic content extraction]\n"
+    )
+    dest_map = {
+        "trade": VAULT / "Trading Progress",
+        "application": VAULT / "Coop Search",
+        "contact": VAULT / "Networking" / "People",
+        "syllabus": VAULT / "Academics",
+    }
+    folder = dest_map.get(content_type, VAULT / "Meta")
+    safe_write(folder / f"{today()} - {image_path.stem}.md", content)
+
+
 def _route_trade(image_path: Path, raw: str) -> None:
     from templates import trade_note
     import re
@@ -88,17 +129,10 @@ def _route_trade(image_path: Path, raw: str) -> None:
 
 
 def _route_application(raw: str) -> None:
-    import anthropic
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    # Reuse coop_bot flow via direct call
-    from coop_bot import _claude
     from templates import application_note
-    prompt = (
-        f"From this job posting content, extract:\nCOMPANY: ...\nROLE: ...\n\n{raw}"
-    )
-    result = _claude(prompt, max_tokens=300)
+    import re
     fields = {}
-    for line in result.splitlines():
+    for line in raw.splitlines():
         if ":" in line:
             k, _, v = line.partition(":")
             fields[k.strip().upper()] = v.strip()
@@ -111,20 +145,14 @@ def _route_application(raw: str) -> None:
 
 
 def _route_syllabus(raw: str) -> None:
-    """Parse syllabus content from screenshot OCR text."""
     import re
     from calendar_sync import create_assignment_events
-    # Try to extract course name and assignments
     course_match = re.search(r"(?:course|class)[:\s]+([A-Za-z0-9 ]+)", raw, re.I)
     course = course_match.group(1).strip() if course_match else "Unknown Course"
-
-    # Create course folder and note
     folder = VAULT / "Academics" / course
     folder.mkdir(parents=True, exist_ok=True)
-    path = safe_write(folder / f"_Course Breakdown.md", f"# {course}\n\n{raw}")
+    path = safe_write(folder / "_Course Breakdown.md", f"# {course}\n\n{raw}")
     log_brain(f"[RUFLO] Syllabus note: {path}")
-
-    # Extract assignments (heuristic)
     assignments = []
     for line in raw.splitlines():
         date_m = re.search(r"(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{2,4})", line)

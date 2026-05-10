@@ -7,14 +7,19 @@ import click
 from rich.console import Console
 
 from config import get_config, vault_path
-from utils import today, safe_write, append_to, log_brain, search_vault
+from utils import (
+    today, safe_write, append_to, log_brain, search_vault,
+    ai_available, AI_UNAVAILABLE_MSG,
+)
 from templates import application_note
 
 console = Console()
 VAULT = vault_path()
 
 
-def _claude(prompt: str, max_tokens: int = 4096) -> str:
+def _claude(prompt: str, max_tokens: int = 4096) -> str | None:
+    if not ai_available():
+        return None
     import anthropic
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     msg = client.messages.create(
@@ -52,6 +57,22 @@ def coop_add(source):
     else:
         text = source
 
+    if not ai_available():
+        console.print(f"[yellow]{AI_UNAVAILABLE_MSG}[/yellow]")
+        # Best-effort parse without AI
+        import re
+        company_m = re.search(r"(?:company|at|@)[:\s]+([A-Za-z0-9 ]+)", text, re.I)
+        company = company_m.group(1).strip()[:40] if company_m else "Company"
+        role_m = re.search(r"(?:role|position|title)[:\s]+([A-Za-z0-9 ]+)", text, re.I)
+        role = role_m.group(1).strip()[:40] if role_m else "Role"
+        content = application_note(company=company, role=role)
+        content += f"\n## Job Posting\n{text[:2000]}\n"
+        folder = VAULT / "Coop Search"
+        path = safe_write(folder / f"{company} - {role} - {today()}.md", content)
+        console.print(f"[green]Application skeleton created (fill in manually):[/green] {path}")
+        log_brain(f"[RUFLO] Coop skeleton (no AI): {company} - {role}")
+        return
+
     my_skills = ", ".join(cfg.get("skills", []))
     style = cfg.get("writing_style", "direct, no fluff, student voice")
     name = cfg.get("name", "Ethan")
@@ -79,9 +100,8 @@ COLD_EMAIL:
 STORY_BULLETS:
 <3 bullet points starting with '-'>
 """
-    raw = _claude(prompt)
+    raw = _claude(prompt) or ""
 
-    # Parse response
     fields = {}
     current_key = None
     current_lines = []
@@ -105,19 +125,15 @@ STORY_BULLETS:
     missing = [s.strip() for s in fields.get("SKILLS_MISSING", "").split(",") if s.strip()]
 
     content = application_note(
-        company=company,
-        role=role,
+        company=company, role=role,
         cover_letter=fields.get("COVER_LETTER", ""),
         cold_email=fields.get("COLD_EMAIL", ""),
         story_bullets=fields.get("STORY_BULLETS", ""),
         fit_score=fields.get("FIT_SCORE", ""),
-        skills_have=have,
-        skills_missing=missing,
+        skills_have=have, skills_missing=missing,
     )
-
     folder = VAULT / "Coop Search"
-    filename = f"{company} - {role} - {today()}.md"
-    path = safe_write(folder / filename, content)
+    path = safe_write(folder / f"{company} - {role} - {today()}.md", content)
     console.print(f"[green]Application created:[/green] {path}")
     console.print(f"Fit Score: [bold]{fields.get('FIT_SCORE', '?')}/10[/bold]")
     log_brain(f"[CLAUDE] Coop application: {company} - {role}")
@@ -179,12 +195,15 @@ def coop_digest(draft):
     for md, fm in stale:
         console.print(f"  {md.stem} — status: {fm.get('status', '?')}")
         if draft:
+            if not ai_available():
+                console.print(f"  [yellow]--draft skipped: {AI_UNAVAILABLE_MSG}[/yellow]")
+                continue
             prompt = (
                 f"Write a short follow-up email (under 80 words) for a "
                 f"{fm.get('role','role')} application at {fm.get('company','company')}. "
                 f"Applied {fm.get('date-applied','')}. Status: {fm.get('status','')}. "
                 f"Student voice, direct, specific ask."
             )
-            email = _claude(prompt, max_tokens=200)
+            email = _claude(prompt, max_tokens=200) or ""
             console.print(f"\n[bold]Draft email:[/bold]\n{email}\n")
             log_brain(f"[CLAUDE] Follow-up draft: {md.stem}")

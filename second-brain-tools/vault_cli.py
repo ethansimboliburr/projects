@@ -13,7 +13,10 @@ load_dotenv()
 console = Console()
 
 from config import get_config, vault_path
-from utils import today, slug, safe_write, append_to, log_brain, search_vault
+from utils import (
+    today, slug, safe_write, append_to, log_brain, search_vault,
+    ai_available, AI_UNAVAILABLE_MSG,
+)
 from templates import (
     trade_note, idea_note, contact_note,
     application_note, daily_note, weekly_review_note,
@@ -22,9 +25,10 @@ from templates import (
 VAULT = vault_path()
 
 
-# ── helpers ────────────────────────────────────────────────────────────────
-
-def _claude(prompt: str, max_tokens: int = 4096) -> str:
+def _claude(prompt: str, max_tokens: int = 4096) -> str | None:
+    """Call Claude API. Returns None if key is missing."""
+    if not ai_available():
+        return None
     import anthropic
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     msg = client.messages.create(
@@ -39,8 +43,6 @@ def _gcal_sync():
     from calendar_sync import sync_calendar
     sync_calendar()
 
-
-# ── CLI root ───────────────────────────────────────────────────────────────
 
 @click.group()
 def cli():
@@ -58,7 +60,6 @@ def log():
 @click.argument("details")
 def log_trade(details):
     """Log a trade."""
-    # Parse what we can from the free-text details
     import re
     ticker = ""
     m = re.search(r"\b([A-Z]{1,5})\b", details)
@@ -66,7 +67,6 @@ def log_trade(details):
         ticker = m.group(1)
 
     content = trade_note(ticker=ticker)
-    # pre-fill raw details in Review section
     content += f"\n> Raw input: {details}\n"
 
     folder = VAULT / "Trading Progress"
@@ -79,35 +79,40 @@ def log_trade(details):
 @log.command("idea")
 @click.argument("details")
 def log_idea(details):
-    """Log an idea — Claude generates steelman, failure modes, next step."""
-    cfg = get_config()
-    console.print("[cyan]Generating idea analysis via Claude...[/cyan]")
-    prompt = (
-        f"You are a critical thinking assistant. The user has this idea:\n\n{details}\n\n"
-        "Respond with ONLY the following three sections (no preamble):\n"
-        "TITLE: <inferred short title>\n"
-        "STEELMAN: <strongest version of this idea in 2-3 sentences>\n"
-        "FAILURE_MODES: <3 bullet points of ways it could fail>\n"
-        "NEXT_STEP: <single most important next action>"
-    )
-    raw = _claude(prompt, max_tokens=512)
-    lines = {}
-    for line in raw.splitlines():
-        if ":" in line:
-            k, _, v = line.partition(":")
-            lines[k.strip().upper()] = v.strip()
+    """Log an idea. Claude generates analysis if API key is set."""
+    if not ai_available():
+        console.print(f"[yellow]{AI_UNAVAILABLE_MSG}[/yellow]")
+        title = slug(details[:40])
+        content = idea_note(title=title)
+        content += f"\n> Raw input: {details}\n"
+    else:
+        console.print("[cyan]Generating idea analysis via Claude...[/cyan]")
+        prompt = (
+            f"You are a critical thinking assistant. The user has this idea:\n\n{details}\n\n"
+            "Respond with ONLY the following three sections (no preamble):\n"
+            "TITLE: <inferred short title>\n"
+            "STEELMAN: <strongest version of this idea in 2-3 sentences>\n"
+            "FAILURE_MODES: <3 bullet points of ways it could fail>\n"
+            "NEXT_STEP: <single most important next action>"
+        )
+        raw = _claude(prompt, max_tokens=512)
+        lines = {}
+        for line in (raw or "").splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                lines[k.strip().upper()] = v.strip()
+        title = lines.get("TITLE", slug(details[:40]))
+        content = idea_note(
+            title=title,
+            steelman=lines.get("STEELMAN", ""),
+            failure_modes=lines.get("FAILURE_MODES", ""),
+            next_step=lines.get("NEXT_STEP", ""),
+        )
 
-    title = lines.get("TITLE", slug(details[:40]))
-    content = idea_note(
-        title=title,
-        steelman=lines.get("STEELMAN", ""),
-        failure_modes=lines.get("FAILURE_MODES", ""),
-        next_step=lines.get("NEXT_STEP", ""),
-    )
     folder = VAULT / "Ideas"
     path = safe_write(folder / f"{today()} - {slug(title)}.md", content)
     console.print(f"[green]Idea note created:[/green] {path}")
-    log_brain(f"[CLAUDE] Idea note created: {title}")
+    log_brain("[CLAUDE] Idea note created" if ai_available() else "[RUFLO] Idea note created (no AI key)")
 
 
 @log.command("contact")
@@ -118,16 +123,19 @@ def log_contact(details):
         name, context = details.split(" - ", 1)
     else:
         name, context = details, ""
-    name = name.strip()
-    context = context.strip()
+    name, context = name.strip(), context.strip()
 
-    console.print("[cyan]Generating LinkedIn draft via Claude...[/cyan]")
-    prompt = (
-        f"Write a short, genuine LinkedIn connection message (under 60 words) "
-        f"from a Drexel CS student to {name}. Context: {context}. "
-        f"No subject line. No fluff. First-person, direct."
-    )
-    draft = _claude(prompt, max_tokens=200)
+    if ai_available():
+        console.print("[cyan]Generating LinkedIn draft via Claude...[/cyan]")
+        prompt = (
+            f"Write a short, genuine LinkedIn connection message (under 60 words) "
+            f"from a Drexel CS student to {name}. Context: {context}. "
+            f"No subject line. No fluff. First-person, direct."
+        )
+        draft = _claude(prompt, max_tokens=200) or ""
+    else:
+        console.print(f"[yellow]{AI_UNAVAILABLE_MSG}[/yellow]")
+        draft = "[Add LinkedIn message here]"
 
     folder = VAULT / "Networking" / "People"
     note_path = folder / f"{name}.md"
@@ -143,8 +151,8 @@ def log_contact(details):
 
     encoded = name.replace(" ", "%20")
     console.print(f"\n[bold]LinkedIn search:[/bold] https://www.linkedin.com/search/results/people/?keywords={encoded}")
-    console.print("\n[bold]LinkedIn Draft:[/bold]")
-    console.print(draft)
+    if draft and draft != "[Add LinkedIn message here]":
+        console.print(f"\n[bold]LinkedIn Draft:[/bold]\n{draft}")
     log_brain(f"[RUFLO] Contact note: {name}")
 
 
@@ -198,7 +206,12 @@ def sync_cal():
 @cli.command()
 def weekly():
     """Generate a weekly review summary."""
-    from datetime import datetime, timedelta
+    if not ai_available():
+        console.print(f"[yellow]{AI_UNAVAILABLE_MSG}[/yellow]")
+        console.print("vault weekly requires ANTHROPIC_API_KEY.")
+        return
+
+    from datetime import timedelta
     cutoff = date.today() - timedelta(days=7)
     notes = []
     for md in VAULT.rglob("*.md"):
@@ -216,11 +229,11 @@ def weekly():
         f"open loops to close.\n\n{combined}"
     )
     console.print("[cyan]Generating weekly review via Claude...[/cyan]")
-    summary = _claude(prompt, max_tokens=400)
+    summary = _claude(prompt, max_tokens=400) or ""
     content = weekly_review_note(today(), summary)
     path = safe_write(VAULT / "Meta" / f"{today()} Weekly Review.md", content)
     console.print(f"[green]Weekly review saved:[/green] {path}")
-    log_brain(f"[CLAUDE] Weekly review generated")
+    log_brain("[CLAUDE] Weekly review generated")
 
 
 # ── vault find ────────────────────────────────────────────────────────────
@@ -252,16 +265,14 @@ def start():
         start_new_session=True,
     )
     console.print(f"[green]brain.py started (PID {proc.pid}).[/green]")
+    if not ai_available():
+        console.print("[yellow]Note: ANTHROPIC_API_KEY not set — AI features disabled. Calendar sync and all RUFLO tasks will run normally.[/yellow]")
     console.print("Calendar sync running now. Everything watches automatically.")
     log_brain(f"[RUFLO] brain.py launched (PID {proc.pid})")
 
 
-# ── coop subgroup (imported from coop_bot) ────────────────────────────────
-
 from coop_bot import coop
 cli.add_command(coop)
-
-# ── grind subgroup (imported from academic_assistant) ─────────────────────
 
 from academic_assistant import grind
 cli.add_command(grind)

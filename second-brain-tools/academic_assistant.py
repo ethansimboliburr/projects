@@ -7,14 +7,16 @@ import click
 from rich.console import Console
 
 from config import vault_path
-from utils import today, safe_write, log_brain
+from utils import today, safe_write, log_brain, ai_available, AI_UNAVAILABLE_MSG
 from templates import study_package_note
 
 console = Console()
 VAULT = vault_path()
 
 
-def _claude(prompt: str, max_tokens: int = 4096) -> str:
+def _claude(prompt: str, max_tokens: int = 4096) -> str | None:
+    if not ai_available():
+        return None
     import anthropic
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     msg = client.messages.create(
@@ -23,6 +25,14 @@ def _claude(prompt: str, max_tokens: int = 4096) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return msg.content[0].text
+
+
+def _require_ai(cmd_name: str) -> bool:
+    """Print warning and return False if AI unavailable."""
+    if not ai_available():
+        console.print(f"[yellow]{cmd_name} requires ANTHROPIC_API_KEY.\n{AI_UNAVAILABLE_MSG}[/yellow]")
+        return False
+    return True
 
 
 def _read_course_notes(course: str) -> str:
@@ -47,6 +57,8 @@ def grind():
 @click.argument("course")
 def grind_prep(course):
     """Generate a prioritized study guide for a course."""
+    if not _require_ai("vault grind prep"):
+        return
     notes = _read_course_notes(course)
     if not notes:
         console.print(f"[red]No notes found for course '{course}'.[/red]")
@@ -57,7 +69,7 @@ def grind_prep(course):
         f"complex applications last. Use ## headers for sections. Be concise.\n\n{notes}"
     )
     console.print("[cyan]Generating study guide...[/cyan]")
-    result = _claude(prompt)
+    result = _claude(prompt) or ""
     folder = VAULT / "Academics" / course
     path = safe_write(folder / f"{today()} - {course} Study Guide.md", result)
     console.print(f"[green]Study guide saved:[/green] {path}")
@@ -69,6 +81,8 @@ def grind_prep(course):
 @click.option("--count", default=10, show_default=True)
 def grind_quiz(course, count):
     """Generate a quiz for a course."""
+    if not _require_ai("vault grind quiz"):
+        return
     notes = _read_course_notes(course)
     if not notes:
         console.print(f"[red]No notes found for course '{course}'.[/red]")
@@ -80,7 +94,7 @@ def grind_quiz(course, count):
         f"Use numbered questions.\n\n{notes}"
     )
     console.print("[cyan]Generating quiz...[/cyan]")
-    result = _claude(prompt)
+    result = _claude(prompt) or ""
     folder = VAULT / "Academics" / course
     path = safe_write(folder / f"{today()} - {course} Quiz.md", result)
     console.print(f"[green]Quiz saved:[/green] {path}")
@@ -92,26 +106,24 @@ def grind_quiz(course, count):
 @click.option("--exam-date", required=True)
 def grind_schedule(course, exam_date):
     """Generate a day-by-day study schedule and add calendar events."""
+    if not _require_ai("vault grind schedule"):
+        return
     notes = _read_course_notes(course)
     exam_dt = datetime.strptime(exam_date, "%Y-%m-%d").date()
     days_left = (exam_dt - date.today()).days
     if days_left <= 0:
         console.print("[red]Exam date is in the past.[/red]")
         return
-
     prompt = (
         f"Create a {days_left}-day study schedule for {course} leading to exam on {exam_date}. "
         f"For each day: specific topic + estimated time. Format as:\n"
         f"## YYYY-MM-DD\n- [ ] Topic (X hours)\n\nBased on these notes:\n{notes}"
     )
     console.print("[cyan]Generating schedule...[/cyan]")
-    result = _claude(prompt)
-
+    result = _claude(prompt) or ""
     folder = VAULT / "Academics" / course
     path = safe_write(folder / f"{course} Study Schedule.md", result)
     console.print(f"[green]Schedule saved:[/green] {path}")
-
-    # Create Google Calendar study blocks
     try:
         from calendar_sync import create_study_events
         create_study_events(course, result, exam_date)
@@ -125,6 +137,8 @@ def grind_schedule(course, exam_date):
 @click.argument("course")
 def grind_sowhat(course):
     """Answer 'So what?' for every major concept."""
+    if not _require_ai("vault grind sowhat"):
+        return
     notes = _read_course_notes(course)
     if not notes:
         console.print(f"[red]No notes found for course '{course}'.[/red]")
@@ -135,7 +149,7 @@ def grind_sowhat(course):
         f"Use ## headers for each concept.\n\n{notes}"
     )
     console.print("[cyan]Generating so-what analysis...[/cyan]")
-    result = _claude(prompt)
+    result = _claude(prompt) or ""
     folder = VAULT / "Academics" / course
     path = safe_write(folder / f"{course} So What.md", result)
     console.print(f"[green]So-what saved:[/green] {path}")
@@ -147,18 +161,18 @@ def grind_sowhat(course):
 @click.option("--exam-date", required=True)
 def grind_save(course, exam_date):
     """Run all grind commands and save as one Study Package."""
+    if not _require_ai("vault grind save"):
+        return
     notes = _read_course_notes(course)
     if not notes:
         console.print(f"[red]No notes found for course '{course}'.[/red]")
         return
-
     exam_dt = datetime.strptime(exam_date, "%Y-%m-%d").date()
     days_until = (exam_dt - date.today()).days
-
     console.print("[cyan]Generating full study package (4 Claude calls)...[/cyan]")
 
     def ask(task_prompt):
-        return _claude(f"{task_prompt}\n\nCourse notes:\n{notes}")
+        return _claude(f"{task_prompt}\n\nCourse notes:\n{notes}") or ""
 
     prep = ask(f"Generate a prioritized study guide for {course}. ## headers, foundational first.")
     quiz = ask(f"Generate 10 quiz questions for {course}. Mix types. Answers in > blockquotes.")
@@ -169,15 +183,10 @@ def grind_save(course, exam_date):
     sowhat = ask(f"For each major concept in {course}, answer 'So what? Why does this matter?' ## headers.")
 
     content = study_package_note(
-        course=course,
-        exam_date=exam_date,
-        days_until=days_until,
-        prep=prep,
-        quiz=quiz,
-        schedule=schedule,
-        sowhat=sowhat,
+        course=course, exam_date=exam_date, days_until=days_until,
+        prep=prep, quiz=quiz, schedule=schedule, sowhat=sowhat,
     )
     folder = VAULT / "Academics" / course
-    path = safe_write(folder / f"_Study Package.md", content)
+    path = safe_write(folder / "_Study Package.md", content)
     console.print(f"[green]Study package saved:[/green] {path}")
     log_brain(f"[CLAUDE] Study package: {course} (exam {exam_date})")
